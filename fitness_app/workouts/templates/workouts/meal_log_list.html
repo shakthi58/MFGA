@@ -1,0 +1,62 @@
+{% extends 'workouts/base.html' %}
+
+{% block content %}
+<h1 class="mb-4">Meal Logger with AI Macros</h1>
+<div class="card mb-4">
+    <div class="card-body">
+        <h2 class="h5">Upload Food Image</h2>
+        <p class="text-muted">Upload a meal picture and get estimated macro nutrients.</p>
+        {% if error_text %}
+        <div class="alert alert-danger">{{ error_text }}</div>
+        {% endif %}
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-3">
+                {{ form.photo.label_tag }}
+                {{ form.photo }}
+            </div>
+            <button type="submit" class="btn btn-primary">Analyze and Log Meal</button>
+        </form>
+    </div>
+</div>
+
+<h2 class="h4">Meal History</h2>
+{% if meal_logs %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Image</th>
+                <th>Food</th>
+                <th>Calories</th>
+                <th>Protein (g)</th>
+                <th>Carbs (g)</th>
+                <th>Fat (g)</th>
+                <th>Fiber (g)</th>
+                <th>AI Notes</th>
+                <th>Logged At</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for meal in meal_logs %}
+            <tr>
+                <td>
+                    <a href="{{ meal.photo.url }}" target="_blank" rel="noopener noreferrer">View</a>
+                </td>
+                <td>{{ meal.food_name }}</td>
+                <td>{{ meal.calories }}</td>
+                <td>{{ meal.protein_g }}</td>
+                <td>{{ meal.carbs_g }}</td>
+                <td>{{ meal.fat_g }}</td>
+                <td>{{ meal.fiber_g }}</td>
+                <td>{{ meal.ai_notes }}</td>
+                <td>{{ meal.created_at }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p>No meals logged yet.</p>
+{% endif %}
+{% endblock %}
