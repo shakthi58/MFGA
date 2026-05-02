@@ -3,11 +3,12 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import AIInteraction, Exercise, WorkoutEntry, WorkoutSession
+from .models import AIInteraction, Exercise, MealLog, WorkoutEntry, WorkoutSession
 from .views import _build_progress_feedback
 
 
@@ -79,3 +80,34 @@ class GenAIFeedbackTests(TestCase):
         interaction = AIInteraction.objects.get(user=self.user)
         self.assertIn('Analyze my workout progression', interaction.prompt)
         self.assertEqual('Mocked AI feedback', interaction.response)
+
+    @patch('workouts.views._estimate_meal_macros')
+    def test_upload_meal_image_logs_macros(self, mock_estimate_meal_macros):
+        mock_estimate_meal_macros.return_value = {
+            "food_name": "Chicken salad",
+            "calories": 420,
+            "protein_g": Decimal("36.5"),
+            "carbs_g": Decimal("18.0"),
+            "fat_g": Decimal("22.0"),
+            "fiber_g": Decimal("5.0"),
+            "ai_notes": "High protein meal.",
+        }
+        self.client.login(username='coach_user', password='testpass123')
+        image_file = SimpleUploadedFile(
+            "meal.jpg",
+            b"fake-image-bytes",
+            content_type="image/jpeg",
+        )
+
+        response = self.client.post(
+            reverse('workouts:meal_log_list'),
+            {'photo': image_file},
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(MealLog.objects.filter(user=self.user).count(), 1)
+        meal = MealLog.objects.get(user=self.user)
+        self.assertEqual(meal.food_name, "Chicken salad")
+        self.assertEqual(meal.calories, 420)
+        self.assertEqual(meal.ai_notes, "High protein meal.")

@@ -117,7 +117,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Groq Gen AI configuration
 GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')
 GROQ_MODEL = os.getenv('GROQ_MODEL', 'llama-3.1-8b-instant')
+GROQ_VISION_MODEL = os.getenv('GROQ_VISION_MODEL', 'meta-llama/llama-4-scout-17b-16e-instruct')
+GROQ_VISION_FALLBACK_MODEL = os.getenv('GROQ_VISION_FALLBACK_MODEL', 'llama-3.2-11b-vision-preview')

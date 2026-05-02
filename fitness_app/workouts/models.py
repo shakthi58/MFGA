@@ -126,3 +126,26 @@ class AIInteraction(models.Model):
 
     def __str__(self):
         return f"AI tip for {self.user.username} @ {self.created_at:%Y-%m-%d %H:%M}"
+
+
+class MealLog(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='meal_logs',
+    )
+    food_name = models.CharField(max_length=120)
+    photo = models.FileField(upload_to='meal_photos/')
+    calories = models.PositiveIntegerField(default=0)
+    protein_g = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    carbs_g = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    fat_g = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    fiber_g = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    ai_notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.food_name} ({self.user.username})"

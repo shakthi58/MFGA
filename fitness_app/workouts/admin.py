@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import WorkoutSession, Exercise, WorkoutEntry, Goal, AIInteraction
+from .models import AIInteraction, Exercise, Goal, MealLog, WorkoutEntry, WorkoutSession
 
 
 @admin.register(WorkoutSession)
@@ -35,4 +35,11 @@ class GoalAdmin(admin.ModelAdmin):
 class AIInteractionAdmin(admin.ModelAdmin):
     list_display = ('user', 'created_at')
     search_fields = ('user__username', 'prompt', 'response')
+    list_filter = ('created_at',)
+
+
+@admin.register(MealLog)
+class MealLogAdmin(admin.ModelAdmin):
+    list_display = ('user', 'food_name', 'calories', 'protein_g', 'carbs_g', 'fat_g', 'created_at')
+    search_fields = ('user__username', 'food_name', 'ai_notes')
     list_filter = ('created_at',)

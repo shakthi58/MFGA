@@ -1,10 +1,10 @@
 from django import forms
 
-from .models import WorkoutEntry, WorkoutSession
+from .models import MealLog, WorkoutEntry, WorkoutSession
 
 
 class WorkoutSessionForm(forms.ModelForm):
-    class Meta:
+    class Meta
         model = WorkoutSession
         fields = ['name', 'date', 'notes']
         widgets = {
@@ -27,4 +27,13 @@ class WorkoutEntryForm(forms.ModelForm):
             'rpe': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.5', 'min': 1, 'max': 10}),
             'rest_seconds': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
+
+
+class MealLogForm(forms.ModelForm):
+    class Meta:
+        model = MealLog
+        fields = ['photo']
+        widgets = {
+            'photo': forms.ClearableFileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
         }

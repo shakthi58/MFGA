@@ -1,13 +1,18 @@
 import json
 import logging
+import base64
+import mimetypes
+import io
+from decimal import Decimal, InvalidOperation
 from urllib import error, request
+from PIL import Image
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
-from .forms import WorkoutEntryForm, WorkoutSessionForm
-from .models import AIInteraction, WorkoutSession
+from .forms import MealLogForm, WorkoutEntryForm, WorkoutSessionForm
+from .models import AIInteraction, MealLog, WorkoutSession
 
 logger = logging.getLogger(__name__)
 
@@ -126,9 +131,71 @@ def _build_workout_summary_for_prompt(user):
     return "\n".join(lines)
 
 
-def _generate_groq_feedback(user):
-    api_key = getattr(settings, "GROQ_API_KEY", "")
+def _extract_json_payload(text):
+    cleaned = text.strip()
+    if cleaned.startswith("```"):
+        cleaned = cleaned.strip("`")
+        if cleaned.lower().startswith("json"):
+            cleaned = cleaned[4:].strip()
+    start = cleaned.find("{")
+    end = cleaned.rfind("}")
+    if start == -1 or end == -1:
+        raise json.JSONDecodeError("No JSON object found", cleaned, 0)
+    return json.loads(cleaned[start:end + 1])
+
+
+def _to_decimal(value):
+    try:
+        return Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError):
+        return Decimal("0")
+
+
+def _call_groq_chat(messages, model_name, max_tokens=400, temperature=0.4):
+    api_key = getattr(settings, "GROQ_API_KEY", "").strip()
     if not api_key:
+        raise ValueError("GROQ_API_KEY is missing")
+
+    payload = {
+        "model": model_name,
+        "messages": messages,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+    }
+    req = request.Request(
+        "https://api.groq.com/openai/v1/chat/completions",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": "fitness-app/1.0 (+django)",
+        },
+        method="POST",
+    )
+    with request.urlopen(req, timeout=30) as response:
+        body = json.loads(response.read().decode("utf-8"))
+    return body["choices"][0]["message"]["content"].strip()
+
+
+def _prepare_image_for_model(photo):
+    """Resize/compress uploaded images so vision inference is stable and affordable."""
+    raw_bytes = photo.read()
+    photo.seek(0)
+    try:
+        img = Image.open(io.BytesIO(raw_bytes)).convert("RGB")
+        # Keep enough detail for food recognition while avoiding huge payloads.
+        img.thumbnail((1024, 1024))
+        out = io.BytesIO()
+        img.save(out, format="JPEG", quality=82, optimize=True)
+        return out.getvalue(), "image/jpeg"
+    except Exception:
+        mime_type = getattr(photo, "content_type", "") or mimetypes.guess_type(photo.name)[0] or "image/jpeg"
+        return raw_bytes, mime_type
+
+
+def _generate_groq_feedback(user):
+    if not getattr(settings, "GROQ_API_KEY", "").strip():
         return _build_progress_feedback(user)
 
     model_name = getattr(settings, "GROQ_MODEL", "llama-3.1-8b-instant")
@@ -144,30 +211,16 @@ def _generate_groq_feedback(user):
         f"Workout history:\n{workout_summary}"
     )
 
-    payload = {
-        "model": model_name,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-        "temperature": 0.4,
-        "max_tokens": 450,
-    }
     try:
-        req = request.Request(
-            "https://api.groq.com/openai/v1/chat/completions",
-            data=json.dumps(payload).encode("utf-8"),
-            headers={
-                "Authorization": f"Bearer {api_key.strip()}",
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-                "User-Agent": "fitness-app/1.0 (+django)",
-            },
-            method="POST",
+        return _call_groq_chat(
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            model_name=model_name,
+            max_tokens=450,
+            temperature=0.4,
         )
-        with request.urlopen(req, timeout=20) as response:
-            body = json.loads(response.read().decode("utf-8"))
-        return body["choices"][0]["message"]["content"].strip()
     except error.HTTPError as exc:
         error_body = ""
         try:
@@ -183,6 +236,102 @@ def _generate_groq_feedback(user):
     except (error.URLError, KeyError, IndexError, json.JSONDecodeError) as exc:
         logger.warning("Groq feedback generation failed: %s", exc)
         return _build_progress_feedback(user)
+
+
+def _estimate_meal_macros(photo):
+    if not getattr(settings, "GROQ_API_KEY", "").strip():
+        return {
+            "food_name": "Unknown meal",
+            "calories": 0,
+            "protein_g": Decimal("0"),
+            "carbs_g": Decimal("0"),
+            "fat_g": Decimal("0"),
+            "fiber_g": Decimal("0"),
+            "ai_notes": "Set GROQ_API_KEY to enable image-based macro detection.",
+        }
+
+    file_bytes, mime_type = _prepare_image_for_model(photo)
+    base64_image = base64.b64encode(file_bytes).decode("utf-8")
+    image_data_uri = f"data:{mime_type};base64,{base64_image}"
+
+    primary_model = getattr(settings, "GROQ_VISION_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct")
+    fallback_model = getattr(settings, "GROQ_VISION_FALLBACK_MODEL", "llama-3.2-11b-vision-preview")
+    system_prompt = (
+        "You are a certified nutrition coach. Estimate macros from meal images. "
+        "Return only valid JSON and do not include markdown."
+    )
+    user_text = (
+        "Analyze this food photo and estimate macro nutrients for one serving.\n"
+        "Respond with JSON using keys:\n"
+        "food_name (string), calories (integer), protein_g (number), carbs_g (number), "
+        "fat_g (number), fiber_g (number), ai_notes (string).\n"
+        "Keep ai_notes short and practical."
+    )
+
+    payload_messages = [
+        {"role": "system", "content": system_prompt},
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": user_text},
+                {"type": "image_url", "image_url": {"url": image_data_uri}},
+            ],
+        },
+    ]
+
+    try:
+        try:
+            raw_content = _call_groq_chat(
+                messages=payload_messages,
+                model_name=primary_model,
+                max_tokens=350,
+                temperature=0.2,
+            )
+        except error.HTTPError as exc:
+            error_body = ""
+            try:
+                error_body = exc.read().decode("utf-8")
+            except Exception:
+                error_body = "<no response body>"
+            logger.warning(
+                "Meal estimation primary model failed with status %s. Response: %s",
+                exc.code,
+                error_body,
+            )
+            raw_content = _call_groq_chat(
+                messages=payload_messages,
+                model_name=fallback_model,
+                max_tokens=350,
+                temperature=0.2,
+            )
+
+        parsed = _extract_json_payload(raw_content)
+        macros = {
+            "food_name": str(parsed.get("food_name", "Unknown meal"))[:120] or "Unknown meal",
+            "calories": max(int(parsed.get("calories", 0) or 0), 0),
+            "protein_g": max(_to_decimal(parsed.get("protein_g", 0)), Decimal("0")),
+            "carbs_g": max(_to_decimal(parsed.get("carbs_g", 0)), Decimal("0")),
+            "fat_g": max(_to_decimal(parsed.get("fat_g", 0)), Decimal("0")),
+            "fiber_g": max(_to_decimal(parsed.get("fiber_g", 0)), Decimal("0")),
+            "ai_notes": str(parsed.get("ai_notes", "")).strip(),
+        }
+        # Avoid storing empty output as a successful analysis.
+        if macros["calories"] == 0 and macros["protein_g"] == 0 and macros["carbs_g"] == 0 and macros["fat_g"] == 0:
+            macros["ai_notes"] = (macros["ai_notes"] + " " if macros["ai_notes"] else "") + (
+                "Low-confidence estimate. Try a clearer image with one meal item."
+            )
+        return macros
+    except Exception as exc:
+        logger.warning("Meal macro estimation failed: %s", exc)
+        return {
+            "food_name": "Unknown meal",
+            "calories": 0,
+            "protein_g": Decimal("0"),
+            "carbs_g": Decimal("0"),
+            "fat_g": Decimal("0"),
+            "fiber_g": Decimal("0"),
+            "ai_notes": "AI could not estimate this image. Try a clearer photo.",
+        }
 
 
 @login_required(login_url='/admin/login/')
@@ -234,4 +383,39 @@ def session_detail(request, pk):
     return render(request, 'workouts/session_detail.html', {
         'session': session,
         'entry_form': entry_form,
+    })
+
+
+@login_required(login_url='/admin/login/')
+def meal_log_list_create(request):
+    meal_logs = MealLog.objects.filter(user=request.user)
+    error_text = ""
+
+    if request.method == 'POST':
+        form = MealLogForm(request.POST, request.FILES)
+        if form.is_valid():
+            photo = form.cleaned_data['photo']
+            if photo.size > 8 * 1024 * 1024:
+                error_text = "Image is too large. Please upload an image under 8 MB."
+            else:
+                macros = _estimate_meal_macros(photo)
+                MealLog.objects.create(
+                    user=request.user,
+                    food_name=macros["food_name"],
+                    photo=photo,
+                    calories=macros["calories"],
+                    protein_g=macros["protein_g"],
+                    carbs_g=macros["carbs_g"],
+                    fat_g=macros["fat_g"],
+                    fiber_g=macros["fiber_g"],
+                    ai_notes=macros["ai_notes"],
+                )
+                return redirect('workouts:meal_log_list')
+    else:
+        form = MealLogForm()
+
+    return render(request, 'workouts/meal_log_list.html', {
+        'form': form,
+        'meal_logs': meal_logs,
+        'error_text': error_text,
     })
