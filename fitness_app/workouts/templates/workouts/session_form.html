@@ -1,0 +1,13 @@
+{% extends 'workouts/base.html' %}
+
+{% block content %}
+<h1 class="mb-4">New Workout Session</h1>
+<form method="post" novalidate>
+    {% csrf_token %}
+    <div class="mb-3"> {{ form.name.label_tag }} {{ form.name }}</div>
+    <div class="mb-3"> {{ form.date.label_tag }} {{ form.date }}</div>
+    <div class="mb-3"> {{ form.notes.label_tag }} {{ form.notes }}</div>
+    <button type="submit" class="btn btn-success">Save session</button>
+    <a href="{% url 'workouts:session_list' %}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

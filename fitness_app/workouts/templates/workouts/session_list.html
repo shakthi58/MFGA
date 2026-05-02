@@ -1,0 +1,47 @@
+{% extends 'workouts/base.html' %}
+
+{% block content %}
+<h1 class="mb-4">Workout Sessions</h1>
+<a class="btn btn-primary mb-3" href="{% url 'workouts:session_create' %}">Create session</a>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h2 class="h5">Gen AI Workout Feedback</h2>
+        <p class="text-muted mb-3">Generate coaching insights based on how your sessions evolve over time.</p>
+        <form method="post" class="mb-3">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="generate_ai_feedback">
+            <button type="submit" class="btn btn-outline-primary">Generate feedback</button>
+        </form>
+
+        {% if latest_ai_feedback %}
+        <div class="border rounded p-3 bg-light-subtle">
+            <div class="small text-muted mb-2">Latest feedback • {{ latest_ai_feedback.created_at }}</div>
+            <div>{{ latest_ai_feedback.response|linebreaksbr }}</div>
+        </div>
+        {% else %}
+        <p class="mb-0">No AI feedback yet. Generate your first coaching snapshot.</p>
+        {% endif %}
+    </div>
+</div>
+
+{% if sessions %}
+<div class="list-group">
+    {% for session in sessions %}
+    <a href="{% url 'workouts:session_detail' session.pk %}" class="list-group-item list-group-item-action">
+        <div class="d-flex justify-content-between">
+            <div>
+                <strong>{{ session.name|default:'Workout session' }}</strong>
+                <div class="small text-muted">{{ session.date }}</div>
+            </div>
+            <div class="text-end">
+                <span class="badge bg-secondary">{{ session.entries.count }} exercises</span>
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<p>No workouts yet. Start by creating a new session.</p>
+{% endif %}
+{% endblock %}

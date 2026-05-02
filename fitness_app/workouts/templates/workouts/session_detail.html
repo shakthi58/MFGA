@@ -1,0 +1,55 @@
+{% extends 'workouts/base.html' %}
+
+{% block content %}
+<h1 class="mb-4">{{ session.name|default:'Workout session' }}</h1>
+<p class="text-muted">{{ session.date }} • {{ session.entries.count }} exercise{{ session.entries.count|pluralize }}</p>
+<p>{{ session.notes }}</p>
+
+<h2 class="mt-4">Add exercise entry</h2>
+<form method="post" novalidate>
+    {% csrf_token %}
+    <div class="row g-3">
+        <div class="col-md-6">{{ entry_form.exercise.label_tag }} {{ entry_form.exercise }}</div>
+        <div class="col-md-2">{{ entry_form.sets.label_tag }} {{ entry_form.sets }}</div>
+        <div class="col-md-2">{{ entry_form.reps.label_tag }} {{ entry_form.reps }}</div>
+        <div class="col-md-2">{{ entry_form.weight.label_tag }} {{ entry_form.weight }}</div>
+    </div>
+    <div class="row g-3 mt-3">
+        <div class="col-md-3">{{ entry_form.rpe.label_tag }} {{ entry_form.rpe }}</div>
+        <div class="col-md-3">{{ entry_form.rest_seconds.label_tag }} {{ entry_form.rest_seconds }}</div>
+        <div class="col-md-6">{{ entry_form.notes.label_tag }} {{ entry_form.notes }}</div>
+    </div>
+    <button type="submit" class="btn btn-success mt-3">Add entry</button>
+    <a href="{% url 'workouts:session_list' %}" class="btn btn-secondary mt-3">Back to sessions</a>
+</form>
+
+{% if session.entries.exists %}
+<h2 class="mt-5">Entries</h2>
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Exercise</th>
+                <th>Sets</th>
+                <th>Reps</th>
+                <th>Weight</th>
+                <th>RPE</th>
+                <th>Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in session.entries.all %}
+            <tr>
+                <td>{{ entry.exercise.name }}</td>
+                <td>{{ entry.sets }}</td>
+                <td>{{ entry.reps }}</td>
+                <td>{{ entry.weight }}</td>
+                <td>{{ entry.rpe }}</td>
+                <td>{{ entry.notes }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}
