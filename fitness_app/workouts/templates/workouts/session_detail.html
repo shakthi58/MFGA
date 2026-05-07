@@ -35,6 +35,7 @@
                 <th>Weight</th>
                 <th>RPE</th>
                 <th>Notes</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -46,6 +47,9 @@
                 <td>{{ entry.weight }}</td>
                 <td>{{ entry.rpe }}</td>
                 <td>{{ entry.notes }}</td>
+                <td>
+                    <a href="{% url 'workouts:entry_delete' session.pk entry.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+                </td>
             </tr>
             {% endfor %}
         </tbody>

@@ -12,7 +12,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import MealLogForm, WorkoutEntryForm, WorkoutSessionForm
-from .models import AIInteraction, MealLog, WorkoutSession
+from .models import AIInteraction, MealLog, WorkoutEntry, WorkoutSession
 
 logger = logging.getLogger(__name__)
 
@@ -419,3 +419,22 @@ def meal_log_list_create(request):
         'meal_logs': meal_logs,
         'error_text': error_text,
     })
+
+
+@login_required(login_url='/admin/login/')
+def session_delete(request, pk):
+    session = get_object_or_404(WorkoutSession, pk=pk, user=request.user)
+    if request.method == 'POST':
+        session.delete()
+        return redirect('workouts:session_list')
+    return render(request, 'workouts/session_confirm_delete.html', {'session': session})
+
+
+@login_required(login_url='/admin/login/')
+def entry_delete(request, pk, entry_id):
+    session = get_object_or_404(WorkoutSession, pk=pk, user=request.user)
+    entry = get_object_or_404(WorkoutEntry, pk=entry_id, session=session)
+    if request.method == 'POST':
+        entry.delete()
+        return redirect('workouts:session_detail', pk=session.pk)
+    return render(request, 'workouts/entry_confirm_delete.html', {'session': session, 'entry': entry})

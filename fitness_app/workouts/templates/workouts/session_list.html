@@ -28,17 +28,22 @@
 {% if sessions %}
 <div class="list-group">
     {% for session in sessions %}
-    <a href="{% url 'workouts:session_detail' session.pk %}" class="list-group-item list-group-item-action">
-        <div class="d-flex justify-content-between">
-            <div>
-                <strong>{{ session.name|default:'Workout session' }}</strong>
-                <div class="small text-muted">{{ session.date }}</div>
-            </div>
-            <div class="text-end">
+    <div class="list-group-item">
+        <div class="d-flex justify-content-between align-items-center">
+            <a href="{% url 'workouts:session_detail' session.pk %}" class="text-decoration-none flex-grow-1">
+                <div>
+                    <strong>{{ session.name|default:'Workout session' }}</strong>
+                    <div class="small text-muted">{{ session.date }}</div>
+                </div>
+            </a>
+            <div class="text-end me-3">
                 <span class="badge bg-secondary">{{ session.entries.count }} exercises</span>
             </div>
+            <div>
+                <a href="{% url 'workouts:session_delete' session.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+            </div>
         </div>
-    </a>
+    </div>
     {% endfor %}
 </div>
 {% else %}

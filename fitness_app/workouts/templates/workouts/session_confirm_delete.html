@@ -1,0 +1,25 @@
+{% extends 'workouts/base.html' %}
+
+{% block content %}
+<div class="card border-danger">
+    <div class="card-header bg-danger text-white">
+        <h5 class="mb-0">Delete Workout Session</h5>
+    </div>
+    <div class="card-body">
+        <p class="mb-3">Are you sure you want to delete this workout session?</p>
+        <div class="alert alert-info">
+            <strong>{{ session.name|default:'Workout session' }}</strong><br>
+            <small class="text-muted">{{ session.date }} • {{ session.entries.count }} exercise{{ session.entries.count|pluralize }}</small>
+        </div>
+        <p class="text-danger"><strong>Warning:</strong> This action cannot be undone. All exercises in this session will also be deleted.</p>
+        
+        <div class="d-flex gap-2">
+            <form method="post" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Delete</button>
+            </form>
+            <a href="{% url 'workouts:session_list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

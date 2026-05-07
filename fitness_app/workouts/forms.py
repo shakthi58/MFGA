@@ -4,7 +4,7 @@ from .models import MealLog, WorkoutEntry, WorkoutSession
 
 
 class WorkoutSessionForm(forms.ModelForm):
-    class Meta
+    class Meta:
         model = WorkoutSession
         fields = ['name', 'date', 'notes']
         widgets = {
