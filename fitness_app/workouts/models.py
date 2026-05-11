@@ -12,6 +12,8 @@ class WorkoutSession(models.Model):
     name = models.CharField(max_length=120, blank=True,
                             help_text='Optional session title')
     date = models.DateField(default=timezone.localdate)
+    weight = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True,
+                                 help_text='Body weight in kg')
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

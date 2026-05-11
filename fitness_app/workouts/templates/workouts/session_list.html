@@ -1,52 +1,110 @@
 {% extends 'workouts/base.html' %}
 
 {% block content %}
-<h1 class="mb-4">Workout Sessions</h1>
-<a class="btn btn-primary mb-3" href="{% url 'workouts:session_create' %}">Create session</a>
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="mb-2"><i class="fas fa-calendar-alt me-3"></i>Workout Sessions</h1>
+                <p class="text-muted mb-0">Track your fitness journey and progress</p>
+            </div>
+            <a href="{% url 'workouts:session_create' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-plus me-2"></i>Create Session
+            </a>
+        </div>
+    </div>
+</div>
 
-<div class="card mb-4">
-    <div class="card-body">
-        <h2 class="h5">Gen AI Workout Feedback</h2>
-        <p class="text-muted mb-3">Generate coaching insights based on how your sessions evolve over time.</p>
-        <form method="post" class="mb-3">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="generate_ai_feedback">
-            <button type="submit" class="btn btn-outline-primary">Generate feedback</button>
-        </form>
-
-        {% if latest_ai_feedback %}
-        <div class="border rounded p-3 bg-light-subtle">
-            <div class="small text-muted mb-2">Latest feedback • {{ latest_ai_feedback.created_at }}</div>
-            <div>{{ latest_ai_feedback.response|linebreaksbr }}</div>
+<div class="row mb-4">
+    <div class="col-lg-8">
+        {% if sessions %}
+        <div class="row g-3">
+            {% for session in sessions %}
+            <div class="col-12">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <a href="{% url 'workouts:session_detail' session.pk %}" class="text-decoration-none">
+                                    <h5 class="card-title text-primary mb-1">
+                                        <i class="fas fa-dumbbell me-2"></i>{{ session.name|default:'Workout Session' }}
+                                    </h5>
+                                    <p class="card-text text-muted mb-2">
+                                        <i class="fas fa-calendar me-1"></i>{{ session.date|date:"F j, Y" }}
+                                        {% if session.weight %}
+                                        <br><small class="text-muted"><i class="fas fa-weight me-1"></i>{{
+                                            session.weight }}kg</small>
+                                        {% endif %}
+                                        {% if session.notes %}
+                                        <br><small class="text-muted"><i class="fas fa-sticky-note me-1"></i>{{
+                                            session.notes|truncatechars:50 }}</small>
+                                        {% endif %}
+                                    </p>
+                                </a>
+                            </div>
+                            <div class="col-md-2 text-center">
+                                <span class="badge fs-6">
+                                    <i class="fas fa-list me-1"></i>{{ session.entries.count }} exercises
+                                </span>
+                            </div>
+                            <div class="col-md-2 text-end">
+                                <a href="{% url 'workouts:session_delete' session.pk %}"
+                                    class="btn btn-outline-danger btn-sm">
+                                    <i class="fas fa-trash me-1"></i>Delete
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
         </div>
         {% else %}
-        <p class="mb-0">No AI feedback yet. Generate your first coaching snapshot.</p>
+        <div class="card text-center py-5">
+            <div class="card-body">
+                <i class="fas fa-dumbbell fa-3x text-muted mb-3"></i>
+                <h4 class="card-title">No workouts yet</h4>
+                <p class="card-text text-muted">Start your fitness journey by creating your first workout session.</p>
+                <a href="{% url 'workouts:session_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Create Your First Session
+                </a>
+            </div>
+        </div>
         {% endif %}
     </div>
-</div>
 
-{% if sessions %}
-<div class="list-group">
-    {% for session in sessions %}
-    <div class="list-group-item">
-        <div class="d-flex justify-content-between align-items-center">
-            <a href="{% url 'workouts:session_detail' session.pk %}" class="text-decoration-none flex-grow-1">
-                <div>
-                    <strong>{{ session.name|default:'Workout session' }}</strong>
-                    <div class="small text-muted">{{ session.date }}</div>
-                </div>
-            </a>
-            <div class="text-end me-3">
-                <span class="badge bg-secondary">{{ session.entries.count }} exercises</span>
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-brain me-2"></i>AI Workout Feedback</h5>
             </div>
-            <div>
-                <a href="{% url 'workouts:session_delete' session.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+            <div class="card-body">
+                <p class="text-muted mb-3">Get personalized coaching insights based on your workout patterns and
+                    progress.</p>
+                <form method="post" class="mb-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="generate_ai_feedback">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-magic me-2"></i>Generate Feedback
+                    </button>
+                </form>
+
+                {% if latest_ai_feedback %}
+                <div class="border-start border-primary border-4 ps-3 bg-light rounded">
+                    <div class="small text-muted mb-2">
+                        <i class="fas fa-clock me-1"></i>Latest feedback • {{ latest_ai_feedback.created_at|date:"M j,
+                        H:i" }}
+                    </div>
+                    <div class="text-dark">{{ latest_ai_feedback.response|linebreaksbr }}</div>
+                </div>
+                {% else %}
+                <div class="text-center text-muted">
+                    <i class="fas fa-lightbulb fa-2x mb-2"></i>
+                    <p class="mb-0">No AI feedback yet. Generate your first coaching insights!</p>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
-    {% endfor %}
 </div>
-{% else %}
-<p>No workouts yet. Start by creating a new session.</p>
-{% endif %}
 {% endblock %}

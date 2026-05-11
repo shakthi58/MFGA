@@ -6,10 +6,11 @@ from .models import MealLog, WorkoutEntry, WorkoutSession
 class WorkoutSessionForm(forms.ModelForm):
     class Meta:
         model = WorkoutSession
-        fields = ['name', 'date', 'notes']
+        fields = ['name', 'date', 'weight', 'notes']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Example: Leg day'}),
             'date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'weight': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'min': 0}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
