@@ -1,23 +1,63 @@
 {% extends 'workouts/base.html' %}
 
 {% block content %}
-<div class="card border-danger">
-    <div class="card-header bg-danger text-white">
-        <h5 class="mb-0">Delete Exercise Entry</h5>
-    </div>
-    <div class="card-body">
-        <p class="mb-3">Are you sure you want to delete this exercise entry from the session?</p>
-        <div class="alert alert-info">
-            <strong>{{ entry.exercise.name }}</strong><br>
-            <small class="text-muted">{{ entry.sets }}x{{ entry.reps }} @ {{ entry.weight }}kg</small>
-        </div>
-        
-        <div class="d-flex gap-2">
-            <form method="post" class="d-inline">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-danger">Delete</button>
-            </form>
-            <a href="{% url 'workouts:session_detail' session.pk %}" class="btn btn-secondary">Cancel</a>
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Delete Exercise Entry</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-danger" role="alert">
+                    <i class="fas fa-exclamation-circle fa-lg me-2"></i>
+                    <strong>Warning:</strong> This action cannot be undone.
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h6 class="card-title">
+                            <i class="fas fa-dumbbell me-2"></i>{{ entry.exercise.name }}
+                        </h6>
+                        <div class="row">
+                            <div class="col-6">
+                                <p class="card-text mb-1">
+                                    <i class="fas fa-hashtag me-1"></i><strong>{{ entry.sets }}</strong> sets
+                                </p>
+                            </div>
+                            <div class="col-6">
+                                <p class="card-text mb-1">
+                                    <i class="fas fa-repeat me-1"></i><strong>{{ entry.reps }}</strong> reps
+                                </p>
+                            </div>
+                        </div>
+                        <p class="card-text mb-1">
+                            <i class="fas fa-weight-hanging me-1"></i><strong>{{ entry.weight }}</strong> kg
+                        </p>
+                        {% if entry.rpe %}
+                        <p class="card-text mb-1">
+                            <i class="fas fa-tachometer-alt me-1"></i>RPE: <strong>{{ entry.rpe }}</strong>
+                        </p>
+                        {% endif %}
+                        {% if entry.notes %}
+                        <p class="card-text mb-0">
+                            <i class="fas fa-sticky-note me-1"></i>{{ entry.notes }}
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 justify-content-end">
+                    <a href="{% url 'workouts:session_detail' session.pk %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Cancel
+                    </a>
+                    <form method="post" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash me-2"></i>Delete Entry
+                        </button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </div>

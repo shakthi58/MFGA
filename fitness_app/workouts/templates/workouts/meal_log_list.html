@@ -1,62 +1,136 @@
 {% extends 'workouts/base.html' %}
 
 {% block content %}
-<h1 class="mb-4">Meal Logger with AI Macros</h1>
-<div class="card mb-4">
-    <div class="card-body">
-        <h2 class="h5">Upload Food Image</h2>
-        <p class="text-muted">Upload a meal picture and get estimated macro nutrients.</p>
-        {% if error_text %}
-        <div class="alert alert-danger">{{ error_text }}</div>
-        {% endif %}
-        <form method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            <div class="mb-3">
-                {{ form.photo.label_tag }}
-                {{ form.photo }}
-            </div>
-            <button type="submit" class="btn btn-primary">Analyze and Log Meal</button>
-        </form>
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="mb-2"><i class="fas fa-utensils me-3"></i>Meal Logger with AI Macros</h1>
+        <p class="text-muted mb-0">Upload food images and get AI-powered macro nutrient estimates</p>
     </div>
 </div>
 
-<h2 class="h4">Meal History</h2>
+<div class="row mb-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-camera me-2"></i>Upload Food Image</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">Take a photo of your meal and let AI analyze the macro nutrients.</p>
+                {% if error_text %}
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>{{ error_text }}
+                </div>
+                {% endif %}
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="{{ form.photo.id_for_label }}" class="form-label fw-bold">
+                            <i class="fas fa-image me-1"></i>{{ form.photo.label }}
+                        </label>
+                        {{ form.photo }}
+                        <div class="form-text">Supported formats: JPG, PNG, AVIF. Max size: 8MB</div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-magic me-2"></i>Analyze and Log Meal
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>How It Works</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <i class="fas fa-upload text-primary me-2"></i>
+                    <strong>Upload Image:</strong> Take a clear photo of your meal
+                </div>
+                <div class="mb-3">
+                    <i class="fas fa-brain text-primary me-2"></i>
+                    <strong>AI Analysis:</strong> Our AI estimates calories and macros
+                </div>
+                <div class="mb-3">
+                    <i class="fas fa-chart-bar text-primary me-2"></i>
+                    <strong>Track Progress:</strong> Monitor your nutrition over time
+                </div>
+                <div class="alert alert-info">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    <strong>Tip:</strong> For best results, photograph one meal item at a time with good lighting.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% if meal_logs %}
-<div class="table-responsive">
-    <table class="table table-striped align-middle">
-        <thead>
-            <tr>
-                <th>Image</th>
-                <th>Food</th>
-                <th>Calories</th>
-                <th>Protein (g)</th>
-                <th>Carbs (g)</th>
-                <th>Fat (g)</th>
-                <th>Fiber (g)</th>
-                <th>AI Notes</th>
-                <th>Logged At</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for meal in meal_logs %}
-            <tr>
-                <td>
-                    <a href="{{ meal.photo.url }}" target="_blank" rel="noopener noreferrer">View</a>
-                </td>
-                <td>{{ meal.food_name }}</td>
-                <td>{{ meal.calories }}</td>
-                <td>{{ meal.protein_g }}</td>
-                <td>{{ meal.carbs_g }}</td>
-                <td>{{ meal.fat_g }}</td>
-                <td>{{ meal.fiber_g }}</td>
-                <td>{{ meal.ai_notes }}</td>
-                <td>{{ meal.created_at }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-history me-2"></i>Meal History</h5>
+                <span class="badge">{{ meal_logs|length }} meals logged</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-image me-1"></i>Image</th>
+                                <th><i class="fas fa-utensils me-1"></i>Food</th>
+                                <th><i class="fas fa-fire me-1"></i>Calories</th>
+                                <th><i class="fas fa-drumstick-bite me-1"></i>Protein</th>
+                                <th><i class="fas fa-bread-slice me-1"></i>Carbs</th>
+                                <th><i class="fas fa-cheese me-1"></i>Fat</th>
+                                <th><i class="fas fa-leaf me-1"></i>Fiber</th>
+                                <th><i class="fas fa-sticky-note me-1"></i>AI Notes</th>
+                                <th><i class="fas fa-clock me-1"></i>Logged</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for meal in meal_logs %}
+                            <tr>
+                                <td>
+                                    <a href="{{ meal.photo.url }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-eye me-1"></i>View
+                                    </a>
+                                </td>
+                                <td><strong>{{ meal.food_name }}</strong></td>
+                                <td><span class="badge bg-warning text-dark">{{ meal.calories }}</span></td>
+                                <td>{{ meal.protein_g }}g</td>
+                                <td>{{ meal.carbs_g }}g</td>
+                                <td>{{ meal.fat_g }}g</td>
+                                <td>{{ meal.fiber_g }}g</td>
+                                <td>
+                                    {% if meal.ai_notes %}
+                                    <small class="text-muted">{{ meal.ai_notes|truncatechars:50 }}</small>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td><small class="text-muted">{{ meal.created_at|date:"M j, H:i" }}</small></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% else %}
-<p>No meals logged yet.</p>
+<div class="row">
+    <div class="col-12">
+        <div class="card text-center py-5">
+            <div class="card-body">
+                <i class="fas fa-utensils fa-3x text-muted mb-3"></i>
+                <h4 class="card-title">No meals logged yet</h4>
+                <p class="card-text text-muted">Start tracking your nutrition by uploading your first meal photo.</p>
+            </div>
+        </div>
+    </div>
+</div>
 {% endif %}
 {% endblock %}

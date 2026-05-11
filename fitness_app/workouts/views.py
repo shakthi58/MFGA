@@ -12,7 +12,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import MealLogForm, WorkoutEntryForm, WorkoutSessionForm
-from .models import AIInteraction, Exercise, MealLog, WorkoutEntry, WorkoutSession
+from .models import AIInteraction, MealLog, WorkoutEntry, WorkoutSession
 
 logger = logging.getLogger(__name__)
 
@@ -36,13 +36,10 @@ def _exercise_progression_summary(sessions):
             weight_value = float(entry.weight)
             volume_value = entry.volume()
             if name not in exercise_stats:
-                exercise_stats[name] = {
-                    "max_weight": weight_value, "max_volume": volume_value}
+                exercise_stats[name] = {"max_weight": weight_value, "max_volume": volume_value}
                 continue
-            exercise_stats[name]["max_weight"] = max(
-                exercise_stats[name]["max_weight"], weight_value)
-            exercise_stats[name]["max_volume"] = max(
-                exercise_stats[name]["max_volume"], volume_value)
+            exercise_stats[name]["max_weight"] = max(exercise_stats[name]["max_weight"], weight_value)
+            exercise_stats[name]["max_volume"] = max(exercise_stats[name]["max_volume"], volume_value)
     return exercise_stats
 
 
@@ -91,30 +88,24 @@ def _build_progress_feedback(user):
             f"Your average session volume is down by {abs(volume_delta):.1f}; consider adding a gradual load increase."
         )
     else:
-        feedback_lines.append(
-            "Your average session volume is stable. Add a small progression target next week.")
+        feedback_lines.append("Your average session volume is stable. Add a small progression target next week.")
 
-    feedback_lines.append(
-        f"You are training at about {sessions_per_week:.1f} sessions/week.")
+    feedback_lines.append(f"You are training at about {sessions_per_week:.1f} sessions/week.")
 
     if improved_exercises:
         top_improvements = ", ".join(improved_exercises[:3])
-        feedback_lines.append(
-            f"Strength trend looks positive for: {top_improvements}.")
+        feedback_lines.append(f"Strength trend looks positive for: {top_improvements}.")
     else:
         feedback_lines.append(
             "No exercise has a clear upward load trend yet. Try increasing weight or reps on one key lift."
         )
 
     if sessions_per_week < 2:
-        feedback_lines.append(
-            "Consistency is the biggest unlock now; target at least 2 sessions/week.")
+        feedback_lines.append("Consistency is the biggest unlock now; target at least 2 sessions/week.")
     elif sessions_per_week > 4:
-        feedback_lines.append(
-            "Great consistency. Keep 1 lighter recovery session to sustain progress.")
+        feedback_lines.append("Great consistency. Keep 1 lighter recovery session to sustain progress.")
     else:
-        feedback_lines.append(
-            "Your consistency is solid. Keep your current cadence and progress slowly.")
+        feedback_lines.append("Your consistency is solid. Keep your current cadence and progress slowly.")
 
     return "\n".join(feedback_lines)
 
@@ -135,8 +126,7 @@ def _build_workout_summary_for_prompt(user):
             entry_parts.append(
                 f"{entry.exercise.name}: {entry.sets}x{entry.reps} @ {entry.weight}kg"
             )
-        session_line = f"- {session.date}: " + \
-            ("; ".join(entry_parts) if entry_parts else "No entries")
+        session_line = f"- {session.date}: " + ("; ".join(entry_parts) if entry_parts else "No entries")
         lines.append(session_line)
     return "\n".join(lines)
 
@@ -200,8 +190,7 @@ def _prepare_image_for_model(photo):
         img.save(out, format="JPEG", quality=82, optimize=True)
         return out.getvalue(), "image/jpeg"
     except Exception:
-        mime_type = getattr(photo, "content_type", "") or mimetypes.guess_type(
-            photo.name)[0] or "image/jpeg"
+        mime_type = getattr(photo, "content_type", "") or mimetypes.guess_type(photo.name)[0] or "image/jpeg"
         return raw_bytes, mime_type
 
 
@@ -265,10 +254,8 @@ def _estimate_meal_macros(photo):
     base64_image = base64.b64encode(file_bytes).decode("utf-8")
     image_data_uri = f"data:{mime_type};base64,{base64_image}"
 
-    primary_model = getattr(settings, "GROQ_VISION_MODEL",
-                            "meta-llama/llama-4-scout-17b-16e-instruct")
-    fallback_model = getattr(
-        settings, "GROQ_VISION_FALLBACK_MODEL", "llama-3.2-11b-vision-preview")
+    primary_model = getattr(settings, "GROQ_VISION_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct")
+    fallback_model = getattr(settings, "GROQ_VISION_FALLBACK_MODEL", "llama-3.2-11b-vision-preview")
     system_prompt = (
         "You are a certified nutrition coach. Estimate macros from meal images. "
         "Return only valid JSON and do not include markdown."
@@ -351,14 +338,12 @@ def _estimate_meal_macros(photo):
 def session_list(request):
     sessions = WorkoutSession.objects.filter(
         user=request.user).prefetch_related('entries').order_by('-date', '-created_at')
-    latest_ai_feedback = AIInteraction.objects.filter(
-        user=request.user).first()
+    latest_ai_feedback = AIInteraction.objects.filter(user=request.user).first()
 
     if request.method == 'POST' and request.POST.get('action') == 'generate_ai_feedback':
         prompt = "Analyze my workout progression and share actionable coaching feedback."
         response = _generate_groq_feedback(request.user)
-        AIInteraction.objects.create(
-            user=request.user, prompt=prompt, response=response)
+        AIInteraction.objects.create(user=request.user, prompt=prompt, response=response)
         return redirect('workouts:session_list')
 
     return render(request, 'workouts/session_list.html', {
@@ -453,60 +438,3 @@ def entry_delete(request, pk, entry_id):
         entry.delete()
         return redirect('workouts:session_detail', pk=session.pk)
     return render(request, 'workouts/entry_confirm_delete.html', {'session': session, 'entry': entry})
-
-
-@login_required(login_url='/admin/login/')
-def progress_chart(request):
-    # Get all exercises for the user
-    exercises = Exercise.objects.filter(
-        entries__session__user=request.user
-    ).distinct().order_by('name')
-
-    selected_exercises = request.GET.getlist('exercises')
-    if not selected_exercises:
-        # Default to all exercises
-        selected_exercises = [str(e.id) for e in exercises]
-
-    # Prepare data for chart
-    chart_data = []
-    colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
-              '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF6384']
-
-    for i, exercise_id in enumerate(selected_exercises):
-        try:
-            exercise = Exercise.objects.get(id=exercise_id)
-            # Only include if user has entries for this exercise
-            if not WorkoutEntry.objects.filter(session__user=request.user, exercise=exercise).exists():
-                continue
-        except Exercise.DoesNotExist:
-            continue
-
-        # Get max weight per session date for this exercise
-        entries = WorkoutEntry.objects.filter(
-            session__user=request.user,
-            exercise=exercise
-        ).select_related('session').order_by('session__date')
-
-        data_points = {}
-        for entry in entries:
-            date_str = entry.session.date.isoformat()
-            if date_str not in data_points or entry.weight > data_points[date_str]:
-                data_points[date_str] = float(entry.weight)
-
-        # Sort by date
-        sorted_dates = sorted(data_points.keys())
-        data = {
-            'label': exercise.name,
-            'data': [{'x': date, 'y': data_points[date]} for date in sorted_dates],
-            'borderColor': colors[i % len(colors)],
-            'backgroundColor': colors[i % len(colors)],
-            'fill': False,
-            'tension': 0.1
-        }
-        chart_data.append(data)
-
-    return render(request, 'workouts/progress_chart.html', {
-        'exercises': exercises,
-        'selected_exercises': selected_exercises,
-        'chart_data': json.dumps(chart_data),
-    })

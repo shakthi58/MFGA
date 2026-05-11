@@ -31,13 +31,8 @@
                                     </h5>
                                     <p class="card-text text-muted mb-2">
                                         <i class="fas fa-calendar me-1"></i>{{ session.date|date:"F j, Y" }}
-                                        {% if session.weight %}
-                                        <br><small class="text-muted"><i class="fas fa-weight me-1"></i>{{
-                                            session.weight }}kg</small>
-                                        {% endif %}
                                         {% if session.notes %}
-                                        <br><small class="text-muted"><i class="fas fa-sticky-note me-1"></i>{{
-                                            session.notes|truncatechars:50 }}</small>
+                                        <br><small class="text-muted"><i class="fas fa-sticky-note me-1"></i>{{ session.notes|truncatechars:50 }}</small>
                                         {% endif %}
                                     </p>
                                 </a>
@@ -48,8 +43,7 @@
                                 </span>
                             </div>
                             <div class="col-md-2 text-end">
-                                <a href="{% url 'workouts:session_delete' session.pk %}"
-                                    class="btn btn-outline-danger btn-sm">
+                                <a href="{% url 'workouts:session_delete' session.pk %}" class="btn btn-outline-danger btn-sm">
                                     <i class="fas fa-trash me-1"></i>Delete
                                 </a>
                             </div>
@@ -79,8 +73,7 @@
                 <h5 class="mb-0"><i class="fas fa-brain me-2"></i>AI Workout Feedback</h5>
             </div>
             <div class="card-body">
-                <p class="text-muted mb-3">Get personalized coaching insights based on your workout patterns and
-                    progress.</p>
+                <p class="text-muted mb-3">Get personalized coaching insights based on your workout patterns and progress.</p>
                 <form method="post" class="mb-3">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="generate_ai_feedback">
@@ -92,8 +85,7 @@
                 {% if latest_ai_feedback %}
                 <div class="border-start border-primary border-4 ps-3 bg-light rounded">
                     <div class="small text-muted mb-2">
-                        <i class="fas fa-clock me-1"></i>Latest feedback • {{ latest_ai_feedback.created_at|date:"M j,
-                        H:i" }}
+                        <i class="fas fa-clock me-1"></i>Latest feedback • {{ latest_ai_feedback.created_at|date:"M j, H:i" }}
                     </div>
                     <div class="text-dark">{{ latest_ai_feedback.response|linebreaksbr }}</div>
                 </div>

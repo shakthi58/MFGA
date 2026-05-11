@@ -39,20 +39,6 @@
                     </div>
 
                     <div class="mb-4">
-                        <label for="{{ form.weight.id_for_label }}" class="form-label fw-bold">
-                            <i class="fas fa-weight me-1"></i>{{ form.weight.label }}
-                        </label>
-                        {{ form.weight }}
-                        {% if form.weight.errors %}
-                        <div class="text-danger mt-1">
-                            {% for error in form.weight.errors %}
-                            <small>{{ error }}</small>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-                    </div>
-
-                    <div class="mb-4">
                         <label for="{{ form.notes.id_for_label }}" class="form-label fw-bold">
                             <i class="fas fa-sticky-note me-1"></i>{{ form.notes.label }}
                         </label>
