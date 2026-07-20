@@ -26,7 +26,21 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-c4p@6!wi2ztx(dro7p9o8yo*6w
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+
+def get_allowed_hosts():
+    hosts = [host.strip() for host in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,0.0.0.0').split(',') if host.strip()]
+    railway_domain = os.getenv('RAILWAY_PUBLIC_DOMAIN')
+    if railway_domain:
+        hosts.append(railway_domain)
+    for suffix in ['.railway.app', '.up.railway.app', '.railway.internal']:
+        if suffix not in hosts:
+            hosts.append(suffix)
+    return hosts
+
+
+ALLOWED_HOSTS = get_allowed_hosts()
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
 
 
 # Application definition
